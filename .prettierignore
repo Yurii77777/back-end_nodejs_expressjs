@@ -1,0 +1,15 @@
+# Ignore folders:
+build
+coverage
+swagger
+
+# Ignore files:
+*.html
+*.svg
+*.jpg
+*.png
+
+nodemon.json
+package-lock.json
+package.json
+tsconfig.json
