@@ -4,15 +4,22 @@ import cors = require('cors');
 
 import { APILogger } from './logger/api.logger';
 
+import { UserController } from './controller/user.controller';
+
+import { regularRegisterValidator } from './validator/authValidator';
+import validate from './validator/validate';
+
 class App {
   public express: express.Application;
   public logger: APILogger;
+  public userController: UserController;
 
   constructor() {
     this.express = express();
-    this.routes();
     this.middleware();
+    this.routes();
     this.logger = new APILogger();
+    this.userController = new UserController();
   }
 
   private middleware() {
@@ -28,8 +35,8 @@ class App {
   }
 
   private routes(): void {
-    this.express.post('/api/user', (req, res, next) => {
-      res.send("it's ok");
+    this.express.post('/api/user', regularRegisterValidator, validate, (req, res, next) => {
+      this.userController.createUser(req, res, next);
     });
   }
 }
