@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import { sign } from 'jsonwebtoken';
 
 import { IUser } from '../model/user.model';
 
@@ -7,6 +6,7 @@ import { UserService } from '../service/user.service';
 import { APILogger } from '../logger/api.logger';
 
 import { handleResponse } from '../utils/handleResponse';
+import { handleAuthToken } from '../utils/handleAuthToken';
 
 export class UserController {
   private userService: UserService;
@@ -21,20 +21,15 @@ export class UserController {
     try {
       this.logger.info('Controller: createUser', req.body);
 
-      const { email } = req.body;
+      const { email, password } = req.body;
       const user: null | IUser = await this.userService.getUser({ email });
 
-      if (user) {
-        const { email, _id: userId } = user;
+      if (!user) {
+        const userData = req.body;
+        const createdUserData = await this.userService.createUser(userData);
+        const { email, _id: userId } = createdUserData;
 
-        const tokenDetails = {
-          userId,
-          email,
-        };
-
-        const token = sign(tokenDetails, process.env.JWT_SECRET, {
-          expiresIn: process.env.TOKEN_EXPIRATION_TIME_MS,
-        });
+        const token = handleAuthToken({ userId, email });
 
         return handleResponse(res, 201, 'User created successfully', {
           user,
@@ -43,21 +38,18 @@ export class UserController {
         });
       }
 
-      const userData = req.body;
-      const createdUserData = await this.userService.createUser(userData);
-      const { email: userEmail, _id: userId } = createdUserData;
+      // Check user password
+      const isMatch = await user.comparePassword(password);
 
-      const tokenDetails = {
-        userId,
-        email: userEmail,
-      };
+      if (!isMatch) {
+        return handleResponse(res, 400, 'Incorrect password');
+      }
 
-      const token = sign(tokenDetails, process.env.JWT_SECRET, {
-        expiresIn: process.env.TOKEN_EXPIRATION_TIME_MS,
-      });
+      const { _id: userId, email: userEmail } = user;
+      const token = handleAuthToken({ userId, email: userEmail });
 
-      return handleResponse(res, 201, 'User created successfully', {
-        user: createdUserData,
+      return handleResponse(res, 200, 'User retrieved successfully', {
+        user,
         token,
         ttl: process.env.TOKEN_EXPIRATION_TIME_MS,
       });
