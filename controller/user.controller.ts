@@ -32,7 +32,7 @@ export class UserController {
         const token = handleAuthToken({ userId, email });
 
         return handleResponse(res, 201, 'User created successfully', {
-          user,
+          user: createdUserData,
           token,
           ttl: process.env.TOKEN_EXPIRATION_TIME_MS,
         });
