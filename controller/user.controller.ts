@@ -57,4 +57,34 @@ export class UserController {
       return next(error);
     }
   }
+
+  async regularLogin(req: Request, res: Response, next: NextFunction) {
+    try {
+      this.logger.info('Controller: regularLogin', req.body);
+      const { email, password } = req.body;
+
+      const user = await this.userService.getUser({ email });
+
+      if (!user) {
+        return handleResponse(res, 404, 'No account found');
+      }
+
+      const match = await user.comparePassword(password);
+
+      if (!match) {
+        return handleResponse(res, 400, 'Incorrect password');
+      }
+
+      const { _id: userId, email: userEmail } = user;
+      const token = handleAuthToken({ userId, email: userEmail });
+
+      return handleResponse(res, 200, 'User retrieved successfully', {
+        user,
+        token,
+        ttl: process.env.TOKEN_EXPIRATION_TIME_MS,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
 }
