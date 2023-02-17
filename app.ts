@@ -6,7 +6,7 @@ import { APILogger } from './logger/api.logger';
 
 import { UserController } from './controller/user.controller';
 
-import { regularRegisterValidator } from './validator/authValidator';
+import { regularRegisterValidator, regularLoginValidator } from './validator/authValidator';
 import validate from './validator/validate';
 
 class App {
@@ -37,6 +37,10 @@ class App {
   private routes(): void {
     this.express.post('/api/user', regularRegisterValidator, validate, (req, res, next) => {
       this.userController.createUser(req, res, next);
+    });
+
+    this.express.post('/api/user/login', regularLoginValidator, validate, (req, res, next) => {
+      this.userController.regularLogin(req, res, next);
     });
   }
 }
