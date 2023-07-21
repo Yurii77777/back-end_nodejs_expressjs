@@ -1,19 +1,24 @@
 import { Request, Response, NextFunction } from 'express';
+import randomatic from 'randomatic';
 
 import { IUser } from '../model/user.model';
 
-import { UserService } from '../service/user.service';
 import { APILogger } from '../logger/api.logger';
+import { UserService } from '../service/user.service';
+import { TokenService } from '../service/token.service';
 
 import { handleResponse } from '../utils/handleResponse';
 import { handleAuthToken } from '../utils/handleAuthToken';
+import { sendMail } from '../utils/sendMail';
 
 export class UserController {
   private userService: UserService;
+  private tokenService: TokenService;
   private logger: APILogger;
 
   constructor() {
     this.userService = new UserService();
+    this.tokenService = new TokenService();
     this.logger = new APILogger();
   }
 
@@ -83,6 +88,46 @@ export class UserController {
         token,
         ttl: process.env.TOKEN_EXPIRATION_TIME_MS,
       });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async handleResetPassword(req: Request, res: Response, next: NextFunction) {
+    this.logger.info('Controller: handleResetPassword', req.query);
+
+    try {
+      const email: string = req.query.email as string;
+
+      const user = await this.userService.getUser({ email });
+
+      if (!user) {
+        return handleResponse(res, 404, 'No account found', {});
+      }
+
+      const { _id: userId } = user;
+
+      const resetToken = await this.tokenService.createToken({
+        userId,
+        resetPasswordToken: `${randomatic('0a', 32)}`,
+      });
+
+      const resetUrl = `${process.env.PASSWORD_CHANGE_URL}?token=${resetToken.resetPasswordToken}`;
+
+      const mailContent = {
+        from: process.env.SENDGRID_FROM_ADDRESS,
+        to: email,
+        subject: 'Посилання для зкидання паролю',
+        text: `Щоб зкинути пароль, перейдіть, будь-ласка, по даному посиланню: ${resetUrl}`,
+      };
+
+      const sent = await sendMail(mailContent);
+
+      if (!sent) {
+        return handleResponse(res, 500, 'Error sending mail', {});
+      }
+
+      return handleResponse(res, 200, 'Password reset email sent successfully', {});
     } catch (error) {
       return next(error);
     }

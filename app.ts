@@ -6,7 +6,7 @@ import { APILogger } from './logger/api.logger';
 
 import { UserController } from './controller/user.controller';
 
-import { regularRegisterValidator, regularLoginValidator } from './validator/authValidator';
+import { regularRegisterValidator, regularLoginValidator, emailValidator } from './validator/authValidator';
 import validate from './validator/validate';
 
 class App {
@@ -41,6 +41,10 @@ class App {
 
     this.express.post('/api/user/login', regularLoginValidator, validate, (req, res, next) => {
       this.userController.regularLogin(req, res, next);
+    });
+
+    this.express.get('/api/user/forgot-password', emailValidator, validate, (req, res, next) => {
+      this.userController.handleResetPassword(req, res, next);
     });
   }
 }

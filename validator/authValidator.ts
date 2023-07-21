@@ -1,8 +1,8 @@
-import { body } from 'express-validator';
+import { body, query } from 'express-validator';
 
 import { UserModel } from '../model/user.model';
 
-const regularRegisterValidator = [
+export const regularRegisterValidator = [
   body(['firstName', 'email', 'password'])
     .not()
     .isEmpty()
@@ -12,7 +12,7 @@ const regularRegisterValidator = [
   body('email').isEmail().withMessage('Should be a valid email address').toLowerCase(),
 ];
 
-const regularLoginValidator = [
+export const regularLoginValidator = [
   body(['email', 'password'])
     .not()
     .isEmpty()
@@ -34,4 +34,11 @@ const regularLoginValidator = [
     }),
 ];
 
-export { regularRegisterValidator, regularLoginValidator };
+export const emailValidator = [
+  query('email')
+    .not()
+    .isEmpty()
+    .withMessage('Can not be empty')
+    .isEmail()
+    .withMessage('Should be a valid email address'),
+];
